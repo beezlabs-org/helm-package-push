@@ -1,0 +1,45 @@
+name: Helm Package Push
+description: Action to package a helm chart and push it to the chart repo
+inputs:
+  dev:
+    description: Whether to create a development chart
+    required: false
+    default: "false"
+  acr-client-id:
+    description: Azure Container Registry client id
+    required: true
+  acr-password:
+    description: Azure Container Registry client secret
+    required: true
+  push:
+    description: Push the chart to the chart repo
+    required: false
+    default: "true"
+runs:
+  using: composite
+  steps:
+    - name: Login to Azure Container Repository
+      run: |
+        helm registry login beezlabs.azurecr.io --username ${{ inputs.acr-client-id }} --password ${{ inputs.acr-password }}
+      shell: bash
+
+    - name: Set chart version
+      run: |
+        if [ "${{ inputs.dev }}" = "true" ]; then
+          echo "CHART_VERSION=$(yq -e '.version' './charts/Chart.yaml')-${{ github.sha }}" >> $GITHUB_ENV
+        else
+          echo "CHART_VERSION=$(yq -e '.version' './charts/Chart.yaml')" >> $GITHUB_ENV
+        fi
+        echo "CHART_NAME=$(yq -e '.name' './charts/Chart.yaml')" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Build, package and push Helm chart
+      run: |
+        cd charts
+        helm dependency build
+        echo "$CHART_VERSION"
+        helm package . --app-version build-${{ github.sha }} --version "$CHART_VERSION"
+        if [ "${{ inputs.push }}" = "true" ]; then
+          helm push "$CHART_NAME"-"$CHART_VERSION".tgz oci://beezlabs.azurecr.io/charts/beezlabs
+        fi
+      shell: bash
