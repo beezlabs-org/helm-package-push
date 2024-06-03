@@ -15,6 +15,9 @@ inputs:
     description: Push the chart to the chart repo
     required: false
     default: "true"
+  app-version:
+    description: The version of the application
+    required: true
 outputs:
   chart-name:
     description: The name of the chart
@@ -51,7 +54,7 @@ runs:
       run: |
         cd charts
         helm dependency build
-        helm package . --app-version build-${{ github.sha }} --version "$CHART_VERSION"
+        helm package . --app-version ${{ inputs.app-version }} --version "$CHART_VERSION"
         if [ "${{ inputs.push }}" = "true" ]; then
           helm push "$CHART_NAME"-"$CHART_VERSION".tgz oci://beezlabs.azurecr.io/charts/beezlabs
         fi
