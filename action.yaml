@@ -15,6 +15,13 @@ inputs:
     description: Push the chart to the chart repo
     required: false
     default: "true"
+outputs:
+  chart-name:
+    description: The name of the chart
+    value: ${{ steps.set-output.outputs.chart-name }}
+  chart-version:
+    description: The version of the chart
+    value: ${{ steps.set-output.outputs.chart-version }}
 runs:
   using: composite
   steps:
@@ -33,11 +40,17 @@ runs:
         echo "CHART_NAME=$(yq -e '.name' './charts/Chart.yaml')" >> $GITHUB_ENV
       shell: bash
 
+    - name: Set output
+      id: set-output
+      run: |
+        echo "chart-name=$(echo $CHART_NAME)" >> $GITHUB_OUTPUT
+        echo "chart-version=$(echo $CHART_VERSION)" >> $GITHUB_OUTPUT
+      shell: bash
+
     - name: Build, package and push Helm chart
       run: |
         cd charts
         helm dependency build
-        echo "$CHART_VERSION"
         helm package . --app-version build-${{ github.sha }} --version "$CHART_VERSION"
         if [ "${{ inputs.push }}" = "true" ]; then
           helm push "$CHART_NAME"-"$CHART_VERSION".tgz oci://beezlabs.azurecr.io/charts/beezlabs
