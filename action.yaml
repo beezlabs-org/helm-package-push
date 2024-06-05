@@ -35,7 +35,7 @@ runs:
 
     - name: Set chart version
       run: |
-        if [ "${{ inputs.dev }}" = "true" ]; then
+        if [ "${{ inputs.dev }}" == "true" ]; then
           echo "CHART_VERSION=$(yq -e '.version' './charts/Chart.yaml')-${{ github.sha }}" >> $GITHUB_ENV
         else
           echo "CHART_VERSION=$(yq -e '.version' './charts/Chart.yaml')" >> $GITHUB_ENV
@@ -55,7 +55,7 @@ runs:
         cd charts
         helm dependency build
         helm package . --app-version ${{ inputs.app-version }} --version "$CHART_VERSION"
-        if [ "${{ inputs.push }}" = "true" ]; then
+        if [ "${{ inputs.push }}" == "true" ]; then
           helm push "$CHART_NAME"-"$CHART_VERSION".tgz oci://beezlabs.azurecr.io/charts/beezlabs
         fi
       shell: bash
