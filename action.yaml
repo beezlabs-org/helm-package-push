@@ -17,7 +17,8 @@ inputs:
     default: "true"
   app-version:
     description: The version of the application
-    required: true
+    required: false
+    default: ""
 outputs:
   chart-name:
     description: The name of the chart
@@ -54,7 +55,11 @@ runs:
       run: |
         cd charts
         helm dependency build
-        helm package . --app-version ${{ inputs.app-version }} --version "$CHART_VERSION"
+        if [ "${{ inputs.app-version }}" == "" ]; then
+          helm package . --version "$CHART_VERSION"
+        else
+          helm package . --app-version ${{ inputs.app-version }} --version "$CHART_VERSION"
+        fi
         if [ "${{ inputs.push }}" == "true" ]; then
           helm push "$CHART_NAME"-"$CHART_VERSION".tgz oci://beezlabs.azurecr.io/charts/beezlabs
         fi
